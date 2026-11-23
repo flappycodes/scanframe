@@ -218,6 +218,9 @@ input[type="text"]:focus, .category-search:focus-within { border-color: color-mi
 .tile { transition: transform .18s ease, box-shadow .18s ease; }
 .tile:hover { transform: translateY(-3px); box-shadow: 0 12px 25px rgba(16, 18, 35, .08); }
 footer { text-align: center; }
+.creator-credit { margin-top: 7px; }
+.creator-credit a { color: var(--blue); font-weight: 700; text-decoration: none; }
+.creator-credit a:hover { text-decoration: underline; }
 .size-control { margin-top: 20px; }
 .size-control-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .size-control-heading label { margin: 0; color: var(--ink); font-size: 12px; font-weight: 700; }
@@ -225,6 +228,15 @@ footer { text-align: center; }
 .size-control input[type="range"] { display: block; width: 100%; margin: 12px 0 7px; accent-color: var(--blue); cursor: pointer; }
 .size-control p { color: var(--mute); font-size: 11px; }
 .size-control input[type="range"]:focus-visible { outline: 3px solid var(--gold); outline-offset: 4px; border-radius: 99px; }
+.logo-upload { margin-top: 22px; padding: 15px; border: 1px solid var(--line); border-radius: 12px; background: #fbfbfe; }
+.logo-upload > label { margin: 0 0 8px; font-size: 12px; }
+.logo-upload input[type="file"] { display: block; width: 100%; color: var(--mute); font: 11px var(--body); }
+.logo-upload input[type="file"]::file-selector-button { margin-right: 9px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); font: 700 11px var(--body); cursor: pointer; }
+.logo-upload > p { margin: 8px 0 0; color: var(--mute); font-size: 11px; line-height: 1.5; }
+.logo-upload > p.logo-error { color: #b42318; }
+.logo-upload .size-control { margin-top: 17px; }
+.remove-logo { margin-top: 12px; padding: 0; border: 0; background: none; color: var(--mute); font: 700 11px var(--body); cursor: pointer; }
+.remove-logo:hover { color: var(--blue); }
 
 @media (max-width: 600px) {
   .wrap { padding-inline: 17px; }

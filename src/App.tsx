@@ -1,10 +1,10 @@
-import { forwardRef, useMemo, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import QRCode from "qrcode";
 import "./App.css";
 
 /* ---------- types ---------- */
-type CatKey = "essentials" | "shops" | "gifting" | "contacts" | "wifi" | "events" | "food";
-type FrameKey = "default" | "box" | "pointer" | "hand" | "ticket" | "corners" | "badge" | "arch";
+type CatKey = "essentials" | "shops" | "gifting" | "contacts" | "wifi" | "events" | "food" | "phone" | "email" | "sms" | "location" | "text";
+type FrameKey = "default" | "box" | "pointer" | "hand" | "ticket" | "corners" | "badge" | "arch" | "polaroid" | "ribbon" | "diamond" | "stamp";
 type Field = { key: string; label: string; placeholder: string };
 type Cat = {
   name: string;
@@ -47,6 +47,11 @@ const CATS: Record<CatKey, Cat> = {
   },
   events: { name: "Events", label: "RSVP HERE", fields: [{ key: "url", label: "Event link", placeholder: "https://example.com/event" }], build: (v) => v.url },
   food: { name: "Food & Drinks", label: "SEE THE MENU", fields: [{ key: "url", label: "Menu link", placeholder: "https://example.com/menu" }], build: (v) => v.url },
+  phone: { name: "Phone", label: "CALL NOW", fields: [{ key: "phone", label: "Phone number", placeholder: "+1 555 123 4567" }], build: (v) => `tel:${v.phone.replace(/[\s()-]/g, "")}` },
+  email: { name: "Email", label: "EMAIL US", fields: [{ key: "email", label: "Email address", placeholder: "hello@example.com" }], build: (v) => `mailto:${v.email.trim()}` },
+  sms: { name: "SMS", label: "TEXT US", fields: [{ key: "phone", label: "Phone number", placeholder: "+1 555 123 4567" }], build: (v) => `sms:${v.phone.replace(/[\s()-]/g, "")}` },
+  location: { name: "Location", label: "FIND US", fields: [{ key: "latitude", label: "Latitude", placeholder: "37.7749" }, { key: "longitude", label: "Longitude", placeholder: "-122.4194" }], build: (v) => `geo:${v.latitude.trim()},${v.longitude.trim()}` },
+  text: { name: "Plain text", label: "READ MESSAGE", fields: [{ key: "text", label: "Message", placeholder: "Enter a short message" }], build: (v) => v.text },
 };
 
 /* ---------- frames ---------- */
@@ -145,6 +150,56 @@ const FRAMES: Record<FrameKey, FrameDef> = {
       </>
     ),
   },
+  polaroid: {
+    name: "Polaroid",
+    w: 320,
+    h: 390,
+    q: [40, 30, 240],
+    render: (a, l) => (
+      <>
+        <rect x="8" y="8" width="304" height="374" rx="8" fill="#fff" stroke={a} strokeWidth="5" />
+        <text x="160" y="344" textAnchor="middle" fontFamily={DISPLAY} fontSize="24" fontWeight="800" fill={a}>{l}</text>
+        <path d="M92 360H228" stroke={a} strokeWidth="2" strokeLinecap="round" opacity=".45" />
+      </>
+    ),
+  },
+  ribbon: {
+    name: "Ribbon",
+    w: 300,
+    h: 390,
+    q: [30, 100, 240],
+    render: (a, l) => (
+      <>
+        <rect x="5" y="72" width="290" height="310" rx="18" fill="#fff" stroke={a} strokeWidth="6" />
+        <path d="M18 10H282L300 30 282 50v36H18V50L0 30Z" fill={a} />
+        <text x="150" y="55" textAnchor="middle" fontFamily={DISPLAY} fontSize="22" fontWeight="800" fill="#fff">{l}</text>
+      </>
+    ),
+  },
+  diamond: {
+    name: "Diamond",
+    w: 400,
+    h: 400,
+    q: [110, 110, 180],
+    render: (a, l) => (
+      <>
+        <polygon points="200,4 396,200 200,396 4,200" fill="#fff" stroke={a} strokeWidth="7" />
+        <text x="200" y="66" textAnchor="middle" fontFamily={DISPLAY} fontSize="22" fontWeight="800" fill={a}>{l}</text>
+      </>
+    ),
+  },
+  stamp: {
+    name: "Dashed border",
+    w: 320,
+    h: 370,
+    q: [40, 40, 240],
+    render: (a, l) => (
+      <>
+        <rect x="8" y="8" width="304" height="354" rx="26" fill="#fff" stroke={a} strokeWidth="5" strokeDasharray="3 9" />
+        <text x="160" y="340" textAnchor="middle" fontFamily={DISPLAY} fontSize="23" fontWeight="800" fill={a}>{l}</text>
+      </>
+    ),
+  },
 };
 
 /* ---------- brand pieces ---------- */
@@ -207,10 +262,12 @@ type QRFrameProps = {
   placeholder?: boolean;
   qrSize?: number;
   outputWidth?: number;
+  logoImage?: string | null;
+  logoSize?: number;
 };
 
 const QRFrame = forwardRef<SVGSVGElement, QRFrameProps>(function QRFrame(
-  { frame, accent, label, text = "", placeholder, qrSize = 100, outputWidth },
+  { frame, accent, label, text = "", placeholder, qrSize = 100, outputWidth, logoImage, logoSize = 20 },
   ref,
 ) {
   const f = FRAMES[frame];
@@ -221,11 +278,11 @@ const QRFrame = forwardRef<SVGSVGElement, QRFrameProps>(function QRFrame(
 
   const qr = useMemo(() => {
     if (placeholder) return null;
-    const m = QRCode.create(text || " ", { errorCorrectionLevel: "Q" }).modules;
+    const m = QRCode.create(text || " ", { errorCorrectionLevel: logoImage ? "H" : "Q" }).modules;
     let d = "";
     for (let y = 0; y < m.size; y++) for (let x = 0; x < m.size; x++) if (m.data[y * m.size + x]) d += `M${x} ${y}h1v1h-1z`;
     return { d, n: m.size };
-  }, [text, placeholder]);
+  }, [text, placeholder, logoImage]);
 
   return (
     <svg
@@ -240,6 +297,34 @@ const QRFrame = forwardRef<SVGSVGElement, QRFrameProps>(function QRFrame(
         <g transform={`translate(${qrX} ${qrY}) scale(${scaledQrSize / (qr.n + QUIET * 2)})`}>
           <rect width={qr.n + QUIET * 2} height={qr.n + QUIET * 2} fill="#fff" />
           <path d={qr.d} transform={`translate(${QUIET} ${QUIET})`} fill="#101223" shapeRendering="crispEdges" />
+          {logoImage && (() => {
+            const logoSide = (qr.n * logoSize) / 100;
+            const logoPadding = logoSide * 0.12;
+            const logoX = QUIET + (qr.n - logoSide) / 2;
+            const logoY = QUIET + (qr.n - logoSide) / 2;
+            return (
+              <>
+                <rect
+                  x={logoX - logoPadding}
+                  y={logoY - logoPadding}
+                  width={logoSide + logoPadding * 2}
+                  height={logoSide + logoPadding * 2}
+                  rx={logoPadding}
+                  fill="#fff"
+                />
+                <image
+                  href={logoImage}
+                  x={logoX}
+                  y={logoY}
+                  width={logoSide}
+                  height={logoSide}
+                  preserveAspectRatio="xMidYMid meet"
+                  role="img"
+                  aria-label="Uploaded center image"
+                />
+              </>
+            );
+          })()}
         </g>
       ) : (
         <rect x={qrX} y={qrY} width={scaledQrSize} height={scaledQrSize} rx="6" fill="#fff" stroke="#101223" strokeWidth="6" strokeDasharray="14 10" />
@@ -287,6 +372,9 @@ export default function App() {
   const [accent, setAccent] = useState("#3a3cff");
   const [frameWidth, setFrameWidth] = useState(1200);
   const [qrSize, setQrSize] = useState(100);
+  const [logoImage, setLogoImage] = useState<string | null>(null);
+  const [logoSize, setLogoSize] = useState(20);
+  const [logoError, setLogoError] = useState("");
   const [vals, setVals] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<"content" | "frame" | "colors" | "advanced">("content");
   const [search, setSearch] = useState("");
@@ -309,6 +397,31 @@ export default function App() {
     setLabel(CATS[k].label);
   }
 
+  function handleLogoUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      setLogoError("Choose a PNG, JPG, or WebP image.");
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      setLogoError("Choose an image smaller than 3 MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setLogoImage(reader.result);
+        setLogoError("");
+      }
+    };
+    reader.onerror = () => setLogoError("The image could not be read. Try another file.");
+    reader.readAsDataURL(file);
+  }
+
   return (
     <div className="wrap">
       <header>
@@ -318,7 +431,7 @@ export default function App() {
           </svg>
           ScanFrame
         </div>
-        <div className="header-note"><span className="privacy-dot" /> Private by default · no account needed</div>
+        <div className="header-note"><span className="privacy-dot" />No account needed</div>
         <span className="header-badge">Free QR studio</span>
       </header>
 
@@ -326,7 +439,7 @@ export default function App() {
         <div className="intro">
           <div className="eyebrow"><span className="eyebrow-icon">⌁</span> QR CODE STUDIO <span className="eyebrow-line" /></div>
           <h1>Make your link <em>scannable.</em></h1>
-          <p className="lead">Turn a link into a QR code, style it to match your brand, and download a print-ready file.</p>
+          <p className="lead">Create QR codes for links, contact details, places, and messages. Style each one to match your brand and download a print-ready file.</p>
           <div className="use-tags"><span>Posters &amp; flyers</span><span>Packaging</span><span>Signage</span><span>Digital menus</span></div>
         </div>
 
@@ -334,7 +447,7 @@ export default function App() {
           <div className="panel">
             <div className="panel-heading">
               <div><span className="step-label">STEP 01</span><h2>Build your code</h2></div>
-              <button className="reset-button" onClick={() => { setVals({}); setLabel(CATS[cat].label); setFrame("default"); setAccent("#3a3cff"); setFrameWidth(1200); setQrSize(100); }}>↺ <span>Reset</span></button>
+              <button className="reset-button" onClick={() => { setVals({}); setLabel(CATS[cat].label); setFrame("default"); setAccent("#3a3cff"); setFrameWidth(1200); setQrSize(100); setLogoImage(null); setLogoSize(20); setLogoError(""); }}>↺ <span>Reset</span></button>
             </div>
             <div className="editor-tabs" role="tablist" aria-label="QR code settings">
               {(["content", "frame", "colors", "advanced"] as const).map((tab) => (
@@ -351,7 +464,7 @@ export default function App() {
                 <div className="chips" role="group" aria-label="Category">
                   {categoryKeys.map((k) => (
                     <button key={k} className="chip" aria-pressed={k === cat} onClick={() => pickCat(k)}>
-                      <span className="chip-icon">{({ essentials: "↗", shops: "◇", gifting: "✳", contacts: "♙", wifi: "⌁", events: "▦", food: "◒" } as Record<CatKey, string>)[k]}</span>{CATS[k].name}
+                      <span className="chip-icon">{({ essentials: "↗", shops: "◇", gifting: "✳", contacts: "♙", wifi: "⌁", events: "▦", food: "◒", phone: "☎", email: "@", sms: "✉", location: "⌖", text: "T" } as Record<CatKey, string>)[k]}</span>{CATS[k].name}
                     </button>
                   ))}
                   {categoryKeys.length === 0 && <p className="empty-search">No content types match “{search}”.</p>}
@@ -403,12 +516,25 @@ export default function App() {
                 <div className="color-swatches" aria-label="Suggested colors">
                   {["#3a3cff", "#111827", "#087e68", "#d84b37", "#7c3aed", "#0e7490"].map((color) => <button key={color} aria-label={`Use ${color}`} title={color} style={{ background: color, boxShadow: accent === color ? "0 0 0 3px var(--card), 0 0 0 5px var(--blue)" : undefined }} onClick={() => setAccent(color)} />)}
                 </div>
+                <div className="logo-upload">
+                  <label htmlFor="center-image">Center image</label>
+                  <input id="center-image" type="file" accept="image/png,image/jpeg,image/webp" aria-describedby="center-image-help" onChange={handleLogoUpload} />
+                  <p id="center-image-help">Add a PNG, JPG, or WebP logo (up to 3 MB). It will be embedded in your download.</p>
+                  {logoError && <p className="logo-error" role="alert">{logoError}</p>}
+                  {logoImage && <>
+                    <div className="size-control">
+                      <div className="size-control-heading"><label htmlFor="logo-size">Logo size</label><output htmlFor="logo-size">{logoSize}%</output></div>
+                      <input id="logo-size" type="range" min="12" max="24" step="1" value={logoSize} onChange={(e) => setLogoSize(Number(e.target.value))} />
+                    </div>
+                    <button type="button" className="remove-logo" onClick={() => { setLogoImage(null); setLogoError(""); }}>Remove image</button>
+                  </>}
+                </div>
                 <div className="helper-card"><span>◐</span><div><strong>Contrast helps every scan</strong><p>Dark frames against a light background are the most reliable choice for printed codes.</p></div></div>
               </>}
 
               {activeTab === "advanced" && <>
                 <div className="section-label"><span>Code settings</span></div>
-                <div className="setting-row"><div><strong>Error correction</strong><p>Extra recovery data helps the code scan if it is partly damaged.</p></div><span className="setting-value">High · Q</span></div>
+                <div className="setting-row"><div><strong>Error correction</strong><p>Extra recovery data helps the code scan if it is partly damaged.</p></div><span className="setting-value">High · {logoImage ? "H" : "Q"}</span></div>
                 <div className="setting-row"><div><strong>QR type</strong><p>This code stores the content directly in the pattern.</p></div><span className="setting-value">Static</span></div>
                 <div className="helper-card"><span>ⓘ</span><div><strong>Check before printing</strong><p>Scan a proof at its final size and on the material you plan to use.</p></div></div>
               </>}
@@ -422,7 +548,7 @@ export default function App() {
             </div>
             <div className="preview-meta"><span>{CATS[cat].name} QR code</span><button className="icon-button" aria-label="Reset preview" title="Reset preview" onClick={() => setVals({})}>↺</button></div>
             <div className={`stage ${!isReady ? "stage-empty" : ""}`}>
-              <QRFrame ref={svgRef} frame={frame} accent={accent} label={label} text={payload} placeholder={!isReady} qrSize={qrSize} outputWidth={frameWidth} />
+              <QRFrame ref={svgRef} frame={frame} accent={accent} label={label} text={payload} placeholder={!isReady} qrSize={qrSize} outputWidth={frameWidth} logoImage={logoImage} logoSize={logoSize} />
               {!isReady && <div className="stage-prompt"><span className="prompt-icon">⌗</span><strong>Your QR code will appear here</strong><span>Add your content to get started</span></div>}
             </div>
             <div className="scan-note"><span>✓</span> Your code is generated privately in your browser</div>
@@ -458,7 +584,10 @@ export default function App() {
         </section>
       </main>
 
-      <footer>Always test-scan your final design at print size before sending it to the printer.</footer>
+      <footer>
+        <div>Always test-scan your final design at print size before sending it to the printer.</div>
+        <div className="creator-credit">Created by <a href="https://github.com/flappycodes" target="_blank" rel="noreferrer">flappycodes</a></div>
+      </footer>
     </div>
   );
 }
