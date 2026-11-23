@@ -120,10 +120,13 @@ h1 { margin: 14px 0 10px; font-size: clamp(38px, 5vw, 58px); letter-spacing: -.0
 .empty-search { color: var(--mute); font-size: 13px; margin: 8px 0; }
 .divider { height: 1px; background: var(--line); margin: 6px 0 16px; }
 .field-wrap label { margin: 0 0 7px; font-size: 12px; }
+.field-wrap input[type="file"] { display: block; width: 100%; color: var(--mute); font: 11px var(--body); }
+.field-wrap input[type="file"]::file-selector-button { margin-right: 9px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); font: 700 11px var(--body); cursor: pointer; }
 input[type="text"] { border-radius: 9px; padding: 11px 12px; font-size: 13px; background: var(--bg); }
 input[type="text"]::placeholder { color: color-mix(in srgb, var(--mute) 74%, transparent); }
 .field-hint { margin: 7px 0 0; color: var(--mute); font-size: 11px; }
 .field-hint strong { color: var(--ink); }
+.field-wrap .logo-error { color: #b42318; }
 .frames { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
 .fr { padding: 8px; border-radius: 10px; font-size: 10px; }
 .fr svg { height: 72px; }

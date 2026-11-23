@@ -1,10 +1,10 @@
-import { forwardRef, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { forwardRef, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import QRCode from "qrcode";
 import PromoPreview from "./components/PromoPreview";
 import "./App.css";
 
 /* ---------- types ---------- */
-type CatKey = "essentials" | "shops" | "gifting" | "contacts" | "wifi" | "events" | "food" | "phone" | "email" | "sms" | "location" | "text";
+type CatKey = "essentials" | "shops" | "gifting" | "contacts" | "wifi" | "events" | "food" | "phone" | "email" | "sms" | "location" | "text" | "image" | "pdf";
 type FrameKey = "default" | "box" | "pointer" | "hand" | "ticket" | "corners" | "badge" | "arch" | "polaroid" | "ribbon" | "diamond" | "stamp";
 type Field = { key: string; label: string; placeholder: string };
 type Cat = {
@@ -12,6 +12,7 @@ type Cat = {
   label: string;
   fields: Field[];
   build: (v: Record<string, string>) => string;
+  fileType?: "image" | "pdf";
 };
 type FrameDef = {
   name: string;
@@ -53,6 +54,8 @@ const CATS: Record<CatKey, Cat> = {
   sms: { name: "SMS", label: "TEXT US", fields: [{ key: "phone", label: "Phone number", placeholder: "+1 555 123 4567" }], build: (v) => `sms:${v.phone.replace(/[\s()-]/g, "")}` },
   location: { name: "Location", label: "FIND US", fields: [{ key: "latitude", label: "Latitude", placeholder: "37.7749" }, { key: "longitude", label: "Longitude", placeholder: "-122.4194" }], build: (v) => `geo:${v.latitude.trim()},${v.longitude.trim()}` },
   text: { name: "Plain text", label: "READ MESSAGE", fields: [{ key: "text", label: "Message", placeholder: "Enter a short message" }], build: (v) => v.text },
+  image: { name: "Image upload", label: "VIEW IMAGE", fields: [], build: () => "", fileType: "image" },
+  pdf: { name: "PDF upload", label: "OPEN PDF", fields: [], build: () => "", fileType: "pdf" },
 };
 
 /* ---------- frames ---------- */
@@ -352,6 +355,14 @@ function exportSvg(svg: SVGSVGElement) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+async function exportPdf(svg: SVGSVGElement, filename = "qr-frame.pdf") {
+  const [{ jsPDF }, { svg2pdf }] = await Promise.all([import("jspdf"), import("svg2pdf.js")]);
+  const vb = svg.viewBox.baseVal;
+  const pdf = new jsPDF({ unit: "pt", format: [vb.width, vb.height] });
+  await svg2pdf(svg, pdf, { x: 0, y: 0, width: vb.width, height: vb.height });
+  pdf.save(filename);
+}
+
 function exportPng(svg: SVGSVGElement, widthPx = 2000) {
   const vb = svg.viewBox.baseVal;
   const img = new Image();
@@ -376,6 +387,9 @@ export default function App() {
   const [logoImage, setLogoImage] = useState<string | null>(null);
   const [logoSize, setLogoSize] = useState(20);
   const [logoError, setLogoError] = useState("");
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [fileName, setFileName] = useState("");
+  const [fileError, setFileError] = useState("");
   const [vals, setVals] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<"content" | "frame" | "colors" | "advanced">("content");
   const [search, setSearch] = useState("");
@@ -383,11 +397,12 @@ export default function App() {
 
   const c = CATS[cat];
   const payload = useMemo(() => {
+    if (c.fileType) return fileUrl || "";
     const v: Record<string, string> = {};
     c.fields.forEach((f) => (v[f.key] = vals[f.key] || f.placeholder));
     return c.build(v);
-  }, [c, vals]);
-  const isReady = c.fields.every((field) => Boolean(vals[field.key]?.trim()));
+  }, [c, fileUrl, vals]);
+  const isReady = c.fileType ? Boolean(fileUrl) : c.fields.every((field) => Boolean(vals[field.key]?.trim()));
   const categoryKeys = (Object.keys(CATS) as CatKey[]).filter((key) =>
     CATS[key].name.toLowerCase().includes(search.trim().toLowerCase()),
   );
@@ -396,6 +411,25 @@ export default function App() {
     setCat(k);
     setVals({});
     setLabel(CATS[k].label);
+    setFileUrl(null);
+    setFileName("");
+    setFileError("");
+  }
+
+  useEffect(() => () => { if (fileUrl) URL.revokeObjectURL(fileUrl); }, [fileUrl]);
+
+  function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const expectedType = c.fileType === "image" ? "image/" : "application/pdf";
+    if (c.fileType === "image" ? !file.type.startsWith(expectedType) : file.type !== expectedType) {
+      setFileError(c.fileType === "image" ? "Choose an image file." : "Choose a PDF file.");
+      return;
+    }
+    setFileUrl(URL.createObjectURL(file));
+    setFileName(file.name);
+    setFileError("");
   }
 
   function handleLogoUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -449,7 +483,7 @@ export default function App() {
           <div className="panel">
             <div className="panel-heading">
               <div><span className="step-label">STEP 01</span><h2>Build your code</h2></div>
-              <button className="reset-button" onClick={() => { setVals({}); setLabel(CATS[cat].label); setFrame("default"); setAccent("#3a3cff"); setFrameWidth(1200); setQrSize(100); setLogoImage(null); setLogoSize(20); setLogoError(""); }}>↺ <span>Reset</span></button>
+              <button className="reset-button" onClick={() => { setVals({}); setFileUrl(null); setFileName(""); setFileError(""); setLabel(CATS[cat].label); setFrame("default"); setAccent("#3a3cff"); setFrameWidth(1200); setQrSize(100); setLogoImage(null); setLogoSize(20); setLogoError(""); }}>↺ <span>Reset</span></button>
             </div>
             <div className="editor-tabs" role="tablist" aria-label="QR code settings">
               {(["content", "frame", "colors", "advanced"] as const).map((tab) => (
@@ -466,14 +500,20 @@ export default function App() {
                 <div className="chips" role="group" aria-label="Category">
                   {categoryKeys.map((k) => (
                     <button key={k} className="chip" aria-pressed={k === cat} onClick={() => pickCat(k)}>
-                      <span className="chip-icon">{({ essentials: "↗", shops: "◇", gifting: "✳", contacts: "♙", wifi: "⌁", events: "▦", food: "◒", phone: "☎", email: "@", sms: "✉", location: "⌖", text: "T" } as Record<CatKey, string>)[k]}</span>{CATS[k].name}
+                      <span className="chip-icon">{({ essentials: "↗", shops: "◇", gifting: "✳", contacts: "♙", wifi: "⌁", events: "▦", food: "◒", phone: "☎", email: "@", sms: "✉", location: "⌖", text: "T", image: "▧", pdf: "▤" } as Record<CatKey, string>)[k]}</span>{CATS[k].name}
                     </button>
                   ))}
                   {categoryKeys.length === 0 && <p className="empty-search">No content types match “{search}”.</p>}
                 </div>
                 <div className="divider" />
                 <div className="section-label"><span>{CATS[cat].name} details</span></div>
-                {c.fields.map((f) => (
+                {c.fileType ? <div className="field-wrap">
+                  <label htmlFor="content-file">Upload {c.fileType === "image" ? "image" : "PDF"}</label>
+                  <input id="content-file" type="file" accept={c.fileType === "image" ? "image/*" : "application/pdf,.pdf"} aria-describedby="content-file-help" onChange={handleFileUpload} />
+                  <p id="content-file-help" className="field-hint">This creates a temporary link in this browser. It stops working when this session ends and cannot be opened on other devices.</p>
+                  {fileName && <p className="field-hint">Selected: <strong>{fileName}</strong></p>}
+                  {fileError && <p className="logo-error" role="alert">{fileError}</p>}
+                </div> : c.fields.map((f) => (
                   <div key={`${cat}-${f.key}`} className="field-wrap">
                     <label htmlFor={`f_${f.key}`}>{f.label}</label>
                     <input
@@ -548,7 +588,7 @@ export default function App() {
               <div><span className="step-label">STEP 02</span><h2>Preview &amp; download</h2></div>
               <span className="live-badge"><span className="privacy-dot" /> Live preview</span>
             </div>
-            <div className="preview-meta"><span>{CATS[cat].name} QR code</span><button className="icon-button" aria-label="Reset preview" title="Reset preview" onClick={() => setVals({})}>↺</button></div>
+              <div className="preview-meta"><span>{CATS[cat].name} QR code</span><button className="icon-button" aria-label="Reset preview" title="Reset preview" onClick={() => { setVals({}); setFileUrl(null); setFileName(""); setFileError(""); }}>↺</button></div>
             <div className={`stage ${!isReady ? "stage-empty" : ""}`}>
               <QRFrame ref={svgRef} frame={frame} accent={accent} label={label} text={payload} placeholder={!isReady} qrSize={qrSize} outputWidth={frameWidth} logoImage={logoImage} logoSize={logoSize} />
               {!isReady && <div className="stage-prompt"><span className="prompt-icon">⌗</span><strong>Your QR code will appear here</strong><span>Add your content to get started</span></div>}
@@ -557,8 +597,9 @@ export default function App() {
             <div className="btns">
               <button className="btn" disabled={!isReady} onClick={() => svgRef.current && exportPng(svgRef.current, frameWidth)}><span>↓</span> Download PNG</button>
               <button className="btn alt" disabled={!isReady} onClick={() => svgRef.current && exportSvg(svgRef.current)}>SVG</button>
+              <button className="btn alt" disabled={!isReady} onClick={() => svgRef.current && void exportPdf(svgRef.current)}>PDF</button>
             </div>
-            <p className="download-note">High-resolution PNG and scalable SVG · Free to use</p>
+            <p className="download-note">High-resolution PNG, scalable SVG, and print-ready PDF · Free to use</p>
           </div>
         </section>
 
