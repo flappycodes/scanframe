@@ -349,6 +349,13 @@ function download(url: string, name: string) {
   a.click();
 }
 
+function logDownload(format: "png" | "svg" | "pdf", filename: string) {
+  const body = new Blob([JSON.stringify({ format, filename })], { type: "application/json" });
+  if (!navigator.sendBeacon("/api/download-log", body)) {
+    void fetch("/api/download-log", { method: "POST", body, keepalive: true }).catch(() => {});
+  }
+}
+
 function svgToString(svg: SVGSVGElement) {
   return new XMLSerializer().serializeToString(svg);
 }
@@ -356,6 +363,7 @@ function svgToString(svg: SVGSVGElement) {
 function exportSvg(svg: SVGSVGElement) {
   const url = URL.createObjectURL(new Blob([svgToString(svg)], { type: "image/svg+xml" }));
   download(url, "scanframe.svg");
+  logDownload("svg", "scanframe.svg");
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
@@ -365,6 +373,7 @@ async function exportPdf(svg: SVGSVGElement, filename = "qr-frame.pdf") {
   const pdf = new jsPDF({ unit: "pt", format: [vb.width, vb.height] });
   await svg2pdf(svg, pdf, { x: 0, y: 0, width: vb.width, height: vb.height });
   pdf.save(filename);
+  logDownload("pdf", filename);
 }
 
 function exportPng(svg: SVGSVGElement, widthPx = 2000) {
@@ -376,6 +385,7 @@ function exportPng(svg: SVGSVGElement, widthPx = 2000) {
     c.height = Math.round((widthPx * vb.height) / vb.width);
     c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
     download(c.toDataURL("image/png"), "scanframe.png");
+    logDownload("png", "scanframe.png");
   };
   img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgToString(svg));
 }

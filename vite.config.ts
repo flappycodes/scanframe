@@ -3,11 +3,13 @@ import { loadEnv, defineConfig, type Plugin } from 'vite'
 import blobUploadHandler from './api/blob-upload.js'
 import blobSessionHandler from './api/blob-session.js'
 import blobDeleteHandler from './api/blob-delete.js'
+import downloadLogHandler from './api/download-log.js'
 
 const localApiHandlers = new Map([
   ['/api/blob-upload', blobUploadHandler],
   ['/api/blob-session', blobSessionHandler],
   ['/api/blob-delete', blobDeleteHandler],
+  ['/api/download-log', downloadLogHandler],
 ])
 
 function localBlobUploadApi(): Plugin {

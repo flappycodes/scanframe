@@ -28,6 +28,8 @@ The **Brand kit** section below the builder displays the ScanFrame logo, badge, 
 
 QR content is generated in the browser. Image and PDF uploads are stored in Vercel Blob under `scanframe/image/` or `scanframe/pdf/`. These files are public: anyone who scans or receives the QR code can access them. The optional center logo is processed locally and is not uploaded. Other QR content is stored directly; links are not shortened or redirected by ScanFrame.
 
+Download events are written to Vercel Function runtime logs with the format (`png`, `svg`, or `pdf`) and generated filename. QR content and user identifiers are not included. View them in the Vercel project’s **Logs** section by searching for `qr-download`.
+
 ## Vercel Blob setup
 
 Connect a **public** Blob store to the Vercel project and set `BLOB_READ_WRITE_TOKEN` in the Vercel project environment settings for each environment you use. The upload endpoint reads this token on the server; `BLOB_STORE_ID` is not required by this endpoint. Never expose the read/write token through a `VITE_` variable or commit its value. Redeploy after changing the environment variable.
