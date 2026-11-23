@@ -1,10 +1,10 @@
-import { forwardRef, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useMemo, useRef, useState, type ReactNode } from "react";
 import QRCode from "qrcode";
 import "./App.css";
 
 /* ---------- types ---------- */
 type CatKey = "essentials" | "shops" | "gifting" | "contacts" | "wifi" | "events" | "food";
-type FrameKey = "default" | "box" | "pointer" | "hand";
+type FrameKey = "default" | "box" | "pointer" | "hand" | "ticket" | "corners" | "badge" | "arch";
 type Field = { key: string; label: string; placeholder: string };
 type Cat = {
   name: string;
@@ -95,6 +95,56 @@ const FRAMES: Record<FrameKey, FrameDef> = {
       </>
     ),
   },
+  ticket: {
+    name: "Ticket",
+    w: 320,
+    h: 390,
+    q: [40, 38, 240],
+    render: (a, l) => (
+      <>
+        <path d="M22 6H298a16 16 0 0 1 16 16v98a25 25 0 0 0 0 50v98a16 16 0 0 1-16 16H22a16 16 0 0 1-16-16v-98a25 25 0 0 0 0-50V22A16 16 0 0 1 22 6Z" fill="#fff" stroke={a} strokeWidth="6" />
+        <path d="M28 302H292" stroke={a} strokeWidth="2" strokeDasharray="5 7" opacity=".45" />
+        <text x="160" y="350" textAnchor="middle" fontFamily={DISPLAY} fontSize="25" fontWeight="800" fill={a}>{l}</text>
+      </>
+    ),
+  },
+  corners: {
+    name: "Corner marks",
+    w: 300,
+    h: 370,
+    q: [30, 30, 240],
+    render: (a, l) => (
+      <>
+        <path d="M48 12H24a12 12 0 0 0-12 12v24M252 12h24a12 12 0 0 1 12 12v24M288 322v24a12 12 0 0 1-12 12h-24M48 358H24a12 12 0 0 1-12-12v-24" fill="none" stroke={a} strokeWidth="7" strokeLinecap="round" />
+        <text x="150" y="350" textAnchor="middle" fontFamily={DISPLAY} fontSize="25" fontWeight="800" fill={a}>{l}</text>
+      </>
+    ),
+  },
+  badge: {
+    name: "Round badge",
+    w: 360,
+    h: 360,
+    q: [65, 65, 230],
+    render: (a, l) => (
+      <>
+        <circle cx="180" cy="180" r="174" fill="#fff" stroke={a} strokeWidth="6" />
+        <circle cx="180" cy="180" r="164" fill="none" stroke={a} strokeWidth="1.5" strokeDasharray="3 7" opacity=".5" />
+        <text x="180" y="42" textAnchor="middle" fontFamily={DISPLAY} fontSize="20" fontWeight="800" fill={a}>{l}</text>
+      </>
+    ),
+  },
+  arch: {
+    name: "Arch",
+    w: 300,
+    h: 380,
+    q: [30, 76, 240],
+    render: (a, l) => (
+      <>
+        <path d="M8 372V150a142 142 0 0 1 284 0v222Z" fill="#fff" stroke={a} strokeWidth="7" strokeLinejoin="round" />
+        <text x="150" y="55" textAnchor="middle" fontFamily={DISPLAY} fontSize="23" fontWeight="800" fill={a}>{l}</text>
+      </>
+    ),
+  },
 };
 
 /* ---------- brand pieces ---------- */
@@ -149,11 +199,25 @@ function AppIcon({ size }: { size: number }) {
 /* ---------- QR + frame ---------- */
 const QUIET = 4; // modules of blank margin that frames must never cover
 
-type QRFrameProps = { frame: FrameKey; accent: string; label: string; text?: string; placeholder?: boolean };
+type QRFrameProps = {
+  frame: FrameKey;
+  accent: string;
+  label: string;
+  text?: string;
+  placeholder?: boolean;
+  qrSize?: number;
+  outputWidth?: number;
+};
 
-const QRFrame = forwardRef<SVGSVGElement, QRFrameProps>(function QRFrame({ frame, accent, label, text = "", placeholder }, ref) {
+const QRFrame = forwardRef<SVGSVGElement, QRFrameProps>(function QRFrame(
+  { frame, accent, label, text = "", placeholder, qrSize = 100, outputWidth },
+  ref,
+) {
   const f = FRAMES[frame];
   const [qx, qy, qs] = f.q;
+  const scaledQrSize = (qs * qrSize) / 100;
+  const qrX = qx + (qs - scaledQrSize) / 2;
+  const qrY = qy + (qs - scaledQrSize) / 2;
 
   const qr = useMemo(() => {
     if (placeholder) return null;
@@ -164,15 +228,21 @@ const QRFrame = forwardRef<SVGSVGElement, QRFrameProps>(function QRFrame({ frame
   }, [text, placeholder]);
 
   return (
-    <svg ref={ref} xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${f.w} ${f.h}`}>
+    <svg
+      ref={ref}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox={`0 0 ${f.w} ${f.h}`}
+      width={outputWidth}
+      height={outputWidth ? Math.round((outputWidth * f.h) / f.w) : undefined}
+    >
       {f.render(accent, label)}
       {qr ? (
-        <g transform={`translate(${qx} ${qy}) scale(${qs / (qr.n + QUIET * 2)})`}>
+        <g transform={`translate(${qrX} ${qrY}) scale(${scaledQrSize / (qr.n + QUIET * 2)})`}>
           <rect width={qr.n + QUIET * 2} height={qr.n + QUIET * 2} fill="#fff" />
           <path d={qr.d} transform={`translate(${QUIET} ${QUIET})`} fill="#101223" shapeRendering="crispEdges" />
         </g>
       ) : (
-        <rect x={qx} y={qy} width={qs} height={qs} rx="6" fill="#fff" stroke="#101223" strokeWidth="6" strokeDasharray="14 10" />
+        <rect x={qrX} y={qrY} width={scaledQrSize} height={scaledQrSize} rx="6" fill="#fff" stroke="#101223" strokeWidth="6" strokeDasharray="14 10" />
       )}
     </svg>
   );
@@ -215,17 +285,12 @@ export default function App() {
   const [frame, setFrame] = useState<FrameKey>("default");
   const [label, setLabel] = useState(CATS.essentials.label);
   const [accent, setAccent] = useState("#3a3cff");
+  const [frameWidth, setFrameWidth] = useState(1200);
+  const [qrSize, setQrSize] = useState(100);
   const [vals, setVals] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<"content" | "frame" | "colors" | "advanced">("content");
   const [search, setSearch] = useState("");
-  const [theme, setTheme] = useState<"light" | "dark">(() =>
-    window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
-  );
   const svgRef = useRef<SVGSVGElement>(null);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-  }, [theme]);
 
   const c = CATS[cat];
   const payload = useMemo(() => {
@@ -254,9 +319,7 @@ export default function App() {
           ScanFrame
         </div>
         <div className="header-note"><span className="privacy-dot" /> Private by default · no account needed</div>
-        <button className="pill" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-          {theme === "dark" ? "Light mode" : "Dark mode"}
-        </button>
+        <span className="header-badge">Free QR studio</span>
       </header>
 
       <main>
@@ -271,7 +334,7 @@ export default function App() {
           <div className="panel">
             <div className="panel-heading">
               <div><span className="step-label">STEP 01</span><h2>Build your code</h2></div>
-              <button className="reset-button" onClick={() => { setVals({}); setLabel(CATS[cat].label); setFrame("default"); setAccent("#3a3cff"); }}>↺ <span>Reset</span></button>
+              <button className="reset-button" onClick={() => { setVals({}); setLabel(CATS[cat].label); setFrame("default"); setAccent("#3a3cff"); setFrameWidth(1200); setQrSize(100); }}>↺ <span>Reset</span></button>
             </div>
             <div className="editor-tabs" role="tablist" aria-label="QR code settings">
               {(["content", "frame", "colors", "advanced"] as const).map((tab) => (
@@ -311,7 +374,7 @@ export default function App() {
               </>}
 
               {activeTab === "frame" && <>
-                <div className="section-label"><span>Choose a frame</span><span className="section-count">4 styles</span></div>
+                <div className="section-label"><span>Choose a frame</span><span className="section-count">{Object.keys(FRAMES).length} styles</span></div>
                 <div className="frames">
                   {(Object.keys(FRAMES) as FrameKey[]).map((k) => (
                     <button key={k} className="fr" aria-pressed={k === frame} onClick={() => setFrame(k)}>
@@ -321,6 +384,16 @@ export default function App() {
                   ))}
                 </div>
                 {frame !== "default" && <div className="field-wrap"><label htmlFor="lab">Frame label</label><input type="text" id="lab" maxLength={18} value={label} onChange={(e) => setLabel(e.target.value)} /></div>}
+                <div className="size-control">
+                  <div className="size-control-heading"><label htmlFor="frame-width">Frame export width</label><output htmlFor="frame-width">{frameWidth} px</output></div>
+                  <input id="frame-width" type="range" min="500" max="2400" step="100" value={frameWidth} onChange={(e) => setFrameWidth(Number(e.target.value))} />
+                  <p>Export width; height adjusts to match the selected frame.</p>
+                </div>
+                <div className="size-control">
+                  <div className="size-control-heading"><label htmlFor="qr-size">QR code size</label><output htmlFor="qr-size">{qrSize}%</output></div>
+                  <input id="qr-size" type="range" min="65" max="100" step="1" value={qrSize} onChange={(e) => setQrSize(Number(e.target.value))} />
+                  <p>Adjust the code inside its frame while keeping it centered.</p>
+                </div>
                 <div className="helper-card"><span>✦</span><div><strong>Keep it easy to scan</strong><p>Leave a clear margin around the code and use a strong contrast between the frame and its background.</p></div></div>
               </>}
 
@@ -349,12 +422,12 @@ export default function App() {
             </div>
             <div className="preview-meta"><span>{CATS[cat].name} QR code</span><button className="icon-button" aria-label="Reset preview" title="Reset preview" onClick={() => setVals({})}>↺</button></div>
             <div className={`stage ${!isReady ? "stage-empty" : ""}`}>
-              <QRFrame ref={svgRef} frame={frame} accent={accent} label={label} text={payload} placeholder={!isReady} />
+              <QRFrame ref={svgRef} frame={frame} accent={accent} label={label} text={payload} placeholder={!isReady} qrSize={qrSize} outputWidth={frameWidth} />
               {!isReady && <div className="stage-prompt"><span className="prompt-icon">⌗</span><strong>Your QR code will appear here</strong><span>Add your content to get started</span></div>}
             </div>
             <div className="scan-note"><span>✓</span> Your code is generated privately in your browser</div>
             <div className="btns">
-              <button className="btn" disabled={!isReady} onClick={() => svgRef.current && exportPng(svgRef.current)}><span>↓</span> Download PNG</button>
+              <button className="btn" disabled={!isReady} onClick={() => svgRef.current && exportPng(svgRef.current, frameWidth)}><span>↓</span> Download PNG</button>
               <button className="btn alt" disabled={!isReady} onClick={() => svgRef.current && exportSvg(svgRef.current)}>SVG</button>
             </div>
             <p className="download-note">High-resolution PNG and scalable SVG · Free to use</p>
