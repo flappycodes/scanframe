@@ -1,7 +1,7 @@
 import { del } from "@vercel/blob";
 import { getBlobOwnerId } from "../server/blob-owner.js";
 
-export default async function handler(request: Request): Promise<Response> {
+async function handler(request: Request): Promise<Response> {
   if (request.method !== "POST") {
     return new Response("Method not allowed", { status: 405, headers: { Allow: "POST" } });
   }
@@ -31,3 +31,5 @@ export default async function handler(request: Request): Promise<Response> {
     return Response.json({ error: message }, { status: 400 });
   }
 }
+
+export default { fetch: handler };

@@ -38,7 +38,7 @@ function localBlobUploadApi(): Plugin {
             headers,
             body: body || undefined,
           })
-          const response = await handler(request)
+          const response = await handler.fetch(request)
           res.statusCode = response.status
           response.headers.forEach((value, key) => res.setHeader(key, value))
           res.end(Buffer.from(await response.arrayBuffer()))

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { getBlobOwnerId, setBlobOwnerCookie } from "../server/blob-owner.js";
 
-export default async function handler(request: Request): Promise<Response> {
+async function handler(request: Request): Promise<Response> {
   if (request.method !== "GET") {
     return new Response("Method not allowed", { status: 405, headers: { Allow: "GET" } });
   }
@@ -17,3 +17,5 @@ export default async function handler(request: Request): Promise<Response> {
   if (!existingOwnerId) setBlobOwnerCookie(response, request, ownerId, token);
   return response;
 }
+
+export default { fetch: handler };

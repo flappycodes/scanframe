@@ -5,7 +5,7 @@ import { BLOB_UPLOADS_ENABLED } from "../config/features.js";
 const MAX_FILE_SIZE = 3 * 1024 * 1024;
 const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
-export default async function handler(request: Request): Promise<Response> {
+async function handler(request: Request): Promise<Response> {
   if (request.method !== "POST") {
     return new Response("Method not allowed", { status: 405, headers: { Allow: "POST" } });
   }
@@ -59,3 +59,5 @@ export default async function handler(request: Request): Promise<Response> {
     return Response.json({ error: message }, { status: 400 });
   }
 }
+
+export default { fetch: handler };
