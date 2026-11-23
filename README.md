@@ -2,6 +2,8 @@
 
 ScanFrame is a browser-based QR code studio. Create a static QR code, customize its frame and accent color, preview it, and download it as a PNG or SVG.
 
+**Try ScanFrame:** [scanframe-qrcode.vercel.app](https://scanframe-qrcode.vercel.app/)
+
 ## Use the app
 
 1. In **Build your code > Content**, choose what the QR code should contain:
