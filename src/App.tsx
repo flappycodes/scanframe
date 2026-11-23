@@ -1,5 +1,7 @@
-import { forwardRef, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { forwardRef, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import QRCode from "qrcode";
+import { upload } from "@vercel/blob/client";
+import { BLOB_UPLOADS_ENABLED } from "../config/features";
 import PromoPreview from "./components/PromoPreview";
 import "./App.css";
 
@@ -7,6 +9,8 @@ import "./App.css";
 type CatKey = "essentials" | "shops" | "gifting" | "contacts" | "wifi" | "events" | "food" | "phone" | "email" | "sms" | "location" | "text" | "image" | "pdf";
 type FrameKey = "default" | "box" | "pointer" | "hand" | "ticket" | "corners" | "badge" | "arch" | "polaroid" | "ribbon" | "diamond" | "stamp";
 type Field = { key: string; label: string; placeholder: string };
+type UploadType = "image" | "pdf";
+type UploadedFile = { url: string; name: string };
 type Cat = {
   name: string;
   label: string;
@@ -387,22 +391,25 @@ export default function App() {
   const [logoImage, setLogoImage] = useState<string | null>(null);
   const [logoSize, setLogoSize] = useState(20);
   const [logoError, setLogoError] = useState("");
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
-  const [fileName, setFileName] = useState("");
+  const [uploadedFiles, setUploadedFiles] = useState<Partial<Record<UploadType, UploadedFile>>>({});
   const [fileError, setFileError] = useState("");
+  const [fileUploading, setFileUploading] = useState(false);
+  const [fileRemoving, setFileRemoving] = useState(false);
+  const fileUploadId = useRef(0);
   const [vals, setVals] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<"content" | "frame" | "colors" | "advanced">("content");
   const [search, setSearch] = useState("");
   const svgRef = useRef<SVGSVGElement>(null);
 
   const c = CATS[cat];
+  const activeUploadedFile = c.fileType ? uploadedFiles[c.fileType] : undefined;
   const payload = useMemo(() => {
-    if (c.fileType) return fileUrl || "";
+    if (c.fileType) return uploadedFiles[c.fileType]?.url || "";
     const v: Record<string, string> = {};
     c.fields.forEach((f) => (v[f.key] = vals[f.key] || f.placeholder));
     return c.build(v);
-  }, [c, fileUrl, vals]);
-  const isReady = c.fileType ? Boolean(fileUrl) : c.fields.every((field) => Boolean(vals[field.key]?.trim()));
+  }, [c, uploadedFiles, vals]);
+  const isReady = c.fileType ? Boolean(activeUploadedFile) : c.fields.every((field) => Boolean(vals[field.key]?.trim()));
   const categoryKeys = (Object.keys(CATS) as CatKey[]).filter((key) =>
     CATS[key].name.toLowerCase().includes(search.trim().toLowerCase()),
   );
@@ -411,25 +418,79 @@ export default function App() {
     setCat(k);
     setVals({});
     setLabel(CATS[k].label);
-    setFileUrl(null);
-    setFileName("");
     setFileError("");
   }
 
-  useEffect(() => () => { if (fileUrl) URL.revokeObjectURL(fileUrl); }, [fileUrl]);
-
-  function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
+  async function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
-    if (!file) return;
-    const expectedType = c.fileType === "image" ? "image/" : "application/pdf";
-    if (c.fileType === "image" ? !file.type.startsWith(expectedType) : file.type !== expectedType) {
-      setFileError(c.fileType === "image" ? "Choose an image file." : "Choose a PDF file.");
+    if (!file || !BLOB_UPLOADS_ENABLED) return;
+    const uploadType = c.fileType;
+    if (!uploadType) return;
+    const expectedType = uploadType === "image" ? "image/" : "application/pdf";
+    if (uploadType === "image" ? !file.type.startsWith(expectedType) : file.type !== expectedType) {
+      setFileError(uploadType === "image" ? "Choose an image file." : "Choose a PDF file.");
       return;
     }
-    setFileUrl(URL.createObjectURL(file));
-    setFileName(file.name);
+    if (file.size > 3 * 1024 * 1024) {
+      setFileError("Choose a file no larger than 3 MB.");
+      return;
+    }
+
+    const uploadId = ++fileUploadId.current;
+    setFileUploading(true);
     setFileError("");
+    try {
+      const sessionResponse = await fetch("/api/blob-session");
+      const session = await sessionResponse.json() as { ownerId?: string; error?: string };
+      if (!sessionResponse.ok || !session.ownerId) throw new Error(session.error || "Could not start an upload session.");
+
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-100) || "upload";
+      const blob = await upload(`scanframe/${session.ownerId}/${uploadType}/${crypto.randomUUID()}-${safeName}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/blob-upload",
+        clientPayload: JSON.stringify({ type: uploadType, ownerId: session.ownerId }),
+      });
+      if (uploadId === fileUploadId.current) {
+        setUploadedFiles((current) => ({ ...current, [uploadType]: { url: blob.url, name: file.name } }));
+      }
+    } catch (error) {
+      if (uploadId === fileUploadId.current) {
+        const message = error instanceof Error ? error.message : "The file could not be uploaded. Try again.";
+        setFileError(message.includes("Failed to retrieve the client token")
+          ? "The upload API could not provide a Blob token. Check BLOB_READ_WRITE_TOKEN in .env.local or Vercel settings, then restart the app or redeploy."
+          : message);
+      }
+    } finally {
+      if (uploadId === fileUploadId.current) setFileUploading(false);
+    }
+  }
+
+  async function handleRemoveUploadedFile() {
+    if (!c.fileType || !activeUploadedFile) return;
+    const uploadType = c.fileType;
+    const fileToRemove = activeUploadedFile;
+    setFileRemoving(true);
+    setFileError("");
+    try {
+      const response = await fetch("/api/blob-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: fileToRemove.url }),
+      });
+      const result = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(result.error || "The uploaded file could not be removed.");
+      setUploadedFiles((current) => {
+        if (current[uploadType]?.url !== fileToRemove.url) return current;
+        const next = { ...current };
+        delete next[uploadType];
+        return next;
+      });
+    } catch (error) {
+      setFileError(error instanceof Error ? error.message : "The uploaded file could not be removed.");
+    } finally {
+      setFileRemoving(false);
+    }
   }
 
   function handleLogoUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -483,7 +544,7 @@ export default function App() {
           <div className="panel">
             <div className="panel-heading">
               <div><span className="step-label">STEP 01</span><h2>Build your code</h2></div>
-              <button className="reset-button" onClick={() => { setVals({}); setFileUrl(null); setFileName(""); setFileError(""); setLabel(CATS[cat].label); setFrame("default"); setAccent("#3a3cff"); setFrameWidth(1200); setQrSize(100); setLogoImage(null); setLogoSize(20); setLogoError(""); }}>↺ <span>Reset</span></button>
+              <button className="reset-button" onClick={() => { setVals({}); setFileError(""); setLabel(CATS[cat].label); setFrame("default"); setAccent("#3a3cff"); setFrameWidth(1200); setQrSize(100); setLogoImage(null); setLogoSize(20); setLogoError(""); }}>↺ <span>Reset</span></button>
             </div>
             <div className="editor-tabs" role="tablist" aria-label="QR code settings">
               {(["content", "frame", "colors", "advanced"] as const).map((tab) => (
@@ -499,7 +560,7 @@ export default function App() {
                 <div className="category-search"><span aria-hidden="true">⌕</span><input type="search" aria-label="Search content types" placeholder="Search content types..." value={search} onChange={(e) => setSearch(e.target.value)} /></div>
                 <div className="chips" role="group" aria-label="Category">
                   {categoryKeys.map((k) => (
-                    <button key={k} className="chip" aria-pressed={k === cat} onClick={() => pickCat(k)}>
+                    <button key={k} className="chip" aria-pressed={k === cat} disabled={!BLOB_UPLOADS_ENABLED && (k === "image" || k === "pdf")} onClick={() => pickCat(k)}>
                       <span className="chip-icon">{({ essentials: "↗", shops: "◇", gifting: "✳", contacts: "♙", wifi: "⌁", events: "▦", food: "◒", phone: "☎", email: "@", sms: "✉", location: "⌖", text: "T", image: "▧", pdf: "▤" } as Record<CatKey, string>)[k]}</span>{CATS[k].name}
                     </button>
                   ))}
@@ -509,9 +570,14 @@ export default function App() {
                 <div className="section-label"><span>{CATS[cat].name} details</span></div>
                 {c.fileType ? <div className="field-wrap">
                   <label htmlFor="content-file">Upload {c.fileType === "image" ? "image" : "PDF"}</label>
-                  <input id="content-file" type="file" accept={c.fileType === "image" ? "image/*" : "application/pdf,.pdf"} aria-describedby="content-file-help" onChange={handleFileUpload} />
-                  <p id="content-file-help" className="field-hint">This creates a temporary link in this browser. It stops working when this session ends and cannot be opened on other devices.</p>
-                  {fileName && <p className="field-hint">Selected: <strong>{fileName}</strong></p>}
+                  <input id="content-file" type="file" accept={c.fileType === "image" ? "image/png,image/jpeg,image/webp" : "application/pdf,.pdf"} aria-describedby="content-file-help" onChange={handleFileUpload} disabled={!BLOB_UPLOADS_ENABLED || fileUploading || fileRemoving || Boolean(activeUploadedFile)} />
+                  <p id="content-file-help" className="field-hint">{BLOB_UPLOADS_ENABLED ? "Upload a PNG, JPG, WebP, or PDF up to 3 MB. The public link can be opened by anyone with the QR code. Removing the file also deletes it from storage." : "New image and PDF uploads are currently disabled in config/features.ts."}</p>
+                  {fileUploading && <p className="field-hint" role="status">Uploading to Vercel Blob…</p>}
+                  {fileRemoving && <p className="field-hint" role="status">Removing file from Vercel Blob…</p>}
+                  {activeUploadedFile && <>
+                    <p className="field-hint">Uploaded: <strong>{activeUploadedFile.name}</strong> · <a href={activeUploadedFile.url} target="_blank" rel="noreferrer">Open public file</a></p>
+                    <button type="button" className="remove-logo" disabled={fileRemoving || fileUploading} onClick={handleRemoveUploadedFile}>Remove uploaded file</button>
+                  </>}
                   {fileError && <p className="logo-error" role="alert">{fileError}</p>}
                 </div> : c.fields.map((f) => (
                   <div key={`${cat}-${f.key}`} className="field-wrap">
@@ -588,7 +654,7 @@ export default function App() {
               <div><span className="step-label">STEP 02</span><h2>Preview &amp; download</h2></div>
               <span className="live-badge"><span className="privacy-dot" /> Live preview</span>
             </div>
-              <div className="preview-meta"><span>{CATS[cat].name} QR code</span><button className="icon-button" aria-label="Reset preview" title="Reset preview" onClick={() => { setVals({}); setFileUrl(null); setFileName(""); setFileError(""); }}>↺</button></div>
+              <div className="preview-meta"><span>{CATS[cat].name} QR code</span><button className="icon-button" aria-label="Reset preview" title="Reset preview" onClick={() => { setVals({}); setFileError(""); }}>↺</button></div>
             <div className={`stage ${!isReady ? "stage-empty" : ""}`}>
               <QRFrame ref={svgRef} frame={frame} accent={accent} label={label} text={payload} placeholder={!isReady} qrSize={qrSize} outputWidth={frameWidth} logoImage={logoImage} logoSize={logoSize} />
               {!isReady && <div className="stage-prompt"><span className="prompt-icon">⌗</span><strong>Your QR code will appear here</strong><span>Add your content to get started</span></div>}

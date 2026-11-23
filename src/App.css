@@ -117,6 +117,7 @@ h1 { margin: 14px 0 10px; font-size: clamp(38px, 5vw, 58px); letter-spacing: -.0
 .chip { padding: 7px 10px; border-radius: 9px; font-size: 11px; }
 .chip-icon { margin-right: 6px; font-size: 14px; }
 .chip[aria-pressed="true"] { box-shadow: 0 2px 7px color-mix(in srgb, var(--blue) 24%, transparent); }
+.chip:disabled { opacity: .45; cursor: not-allowed; }
 .empty-search { color: var(--mute); font-size: 13px; margin: 8px 0; }
 .divider { height: 1px; background: var(--line); margin: 6px 0 16px; }
 .field-wrap label { margin: 0 0 7px; font-size: 12px; }

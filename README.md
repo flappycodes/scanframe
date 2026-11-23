@@ -1,6 +1,6 @@
 # ScanFrame
 
-ScanFrame is a browser-based QR code studio. Create a static QR code, customize its frame and accent color, preview it, and download it as a PNG or SVG.
+ScanFrame is a QR code studio. Create a static QR code, customize its frame and accent color, preview it, and download it as a PNG, SVG, or PDF.
 
 **Try ScanFrame:** [scanframe-qrcode.vercel.app](https://scanframe-qrcode.vercel.app/)
 
@@ -14,7 +14,7 @@ Created by [flappycodes](https://github.com/flappycodes).
    - **Wi-Fi:** a network name and password, encoded as a Wi-Fi QR payload.
    - **Phone, Email, SMS, and Location:** a phone number, email address, or map coordinates that open in a compatible device app.
    - **Plain text:** a short message displayed when scanned.
-   - **Image upload and PDF upload:** create a temporary QR link to a file selected in the current browser session. These links are local to that browser and are not shareable with other devices.
+   - **Image upload and PDF upload:** upload a PNG, JPG, WebP, or PDF up to 3 MB to the connected public Vercel Blob store. The QR code points to the public file URL. **Remove uploaded file** deletes the object from Blob storage; use the same browser that uploaded it. The QR link stops working.
 2. Fill in the required fields. The live preview updates as you customize the design. Downloads stay disabled until the required fields are filled in.
 3. Open **Frame** to choose one of twelve styles: Default, Box, Pointer tab, Hand drawn, Ticket, Corner marks, Round badge, Arch, Polaroid, Ribbon, Diamond, or Dashed border. For framed designs, you can also edit the label.
 4. In **Frame**, adjust the export width from 500 to 2,400 pixels and the QR code size from 65% to 100%. The code remains centered; the exported height follows the selected frame's proportions.
@@ -26,7 +26,13 @@ The **Brand kit** section below the builder displays the ScanFrame logo, badge, 
 
 ## Privacy
 
-QR content and uploaded files, including optional center images, are processed in the browser and are not uploaded by the app. Image and PDF QR links use temporary browser URLs and stop working when that browser session ends. Other QR content is stored directly; links are not shortened or redirected by ScanFrame.
+QR content is generated in the browser. Image and PDF uploads are stored in Vercel Blob under `scanframe/image/` or `scanframe/pdf/`. These files are public: anyone who scans or receives the QR code can access them. The optional center logo is processed locally and is not uploaded. Other QR content is stored directly; links are not shortened or redirected by ScanFrame.
+
+## Vercel Blob setup
+
+Connect a **public** Blob store to the Vercel project and set `BLOB_READ_WRITE_TOKEN` in the Vercel project environment settings for each environment you use. The upload endpoint reads this token on the server; `BLOB_STORE_ID` is not required by this endpoint. Never expose the read/write token through a `VITE_` variable or commit its value. Redeploy after changing the environment variable.
+
+To pause new image and PDF uploads, set `BLOB_UPLOADS_ENABLED` to `false` in `config/features.ts`, then rebuild and redeploy. The UI disables the upload picker and the API rejects upload requests; the remove action remains available.
 
 ## Run locally
 
@@ -37,7 +43,7 @@ npm install
 npm run dev
 ```
 
-Vite prints the local development URL in the terminal.
+Vite prints the local development URL in the terminal. Its local middleware serves `/api/blob-upload`, so uploads work with `npm run dev` without `vercel dev`. To get the token locally, link the project with `npx vercel link` and pull its development environment with `npx vercel env pull .env.local`. The `.env.local` file is ignored by Git and must stay out of source control.
 
 ## Project commands
 
