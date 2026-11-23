@@ -1,5 +1,6 @@
 import { forwardRef, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import QRCode from "qrcode";
+import PromoPreview from "./components/PromoPreview";
 import "./App.css";
 
 /* ---------- types ---------- */
@@ -441,6 +442,7 @@ export default function App() {
           <h1>Make your link <em>scannable.</em></h1>
           <p className="lead">Create QR codes for links, contact details, places, and messages. Style each one to match your brand and download a print-ready file.</p>
           <div className="use-tags"><span>Posters &amp; flyers</span><span>Packaging</span><span>Signage</span><span>Digital menus</span></div>
+          <a className="promo-jump" href="#promo-preview">Watch a 5-second preview <span aria-hidden="true">↓</span></a>
         </div>
 
         <section className="app">
@@ -559,6 +561,8 @@ export default function App() {
             <p className="download-note">High-resolution PNG and scalable SVG · Free to use</p>
           </div>
         </section>
+
+        <PromoPreview />
 
         <section className="kit">
           <h2>Brand kit</h2>

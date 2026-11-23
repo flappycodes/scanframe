@@ -1,0 +1,261 @@
+<div id="scanframe-promo-preview" class="sf-video-demo is-playing">
+  <p class="text-small text-muted">SCANFRAME / 5 SECOND PROMO</p>
+  <h1>Make your link <span class="sf-accent">scannable.</span></h1>
+  <p class="text-muted">A quick visual for turning a simple link into a QR code that feels like your brand.</p>
+
+  <div class="sf-scene" aria-hidden="true">
+    <div class="sf-browser card">
+      <div class="sf-browser-top">
+        <div class="sf-dots"><i></i><i></i><i></i></div>
+        <span class="text-small text-muted">ScanFrame Studio</span>
+        <span class="sf-private text-small">No account needed</span>
+      </div>
+      <div class="sf-workspace">
+        <div class="sf-editor">
+          <span class="text-small text-muted">YOUR DESTINATION</span>
+          <div class="sf-link"><span>scanframe.app/menu</span><b aria-hidden="true">↗</b></div>
+          <span class="text-small text-muted">YOUR STYLE</span>
+          <div class="sf-swatches"><i></i><i></i><i></i><i></i></div>
+          <span class="sf-ready text-small">READY TO SHARE</span>
+        </div>
+        <div class="sf-preview">
+          <div class="sf-frame">
+            <div class="sf-qr" data-qr-grid></div>
+            <div class="sf-center-logo">SF</div>
+            <div class="sf-scan-line"></div>
+          </div>
+          <span class="text-small text-muted">LIVE PREVIEW</span>
+        </div>
+      </div>
+      <div class="sf-download"><span class="sf-download-check">✓</span> Print-ready. Scan-tested. Yours.</div>
+    </div>
+    <div class="sf-caption sf-caption-one">One link.</div>
+    <div class="sf-caption sf-caption-two">Your style.</div>
+    <div class="sf-caption sf-caption-three">Ready to scan.</div>
+  </div>
+
+  <button class="btn btn-primary cursor-interaction sf-replay" type="button" data-replay>Replay preview</button>
+  <p class="sr-only">An animated ScanFrame promo: a link enters the studio, a branded QR code appears, a scan line passes over it, and a ready-to-share message appears.</p>
+
+  <style>
+    #scanframe-promo-preview {
+      display: grid;
+      gap: calc(var(--font-size-base) * .7);
+      width: 100%;
+      color: var(--foreground);
+    }
+    #scanframe-promo-preview h1,
+    #scanframe-promo-preview p { margin: 0; }
+    #scanframe-promo-preview h1 { max-width: 14ch; }
+    #scanframe-promo-preview .sf-accent { color: var(--blue); }
+    #scanframe-promo-preview .sf-scene {
+      position: relative;
+      display: grid;
+      justify-items: center;
+      gap: calc(var(--font-size-base) * .6);
+      padding-block: calc(var(--font-size-base) * .4);
+    }
+    #scanframe-promo-preview .sf-browser {
+      width: min(100%, 560px);
+      overflow: hidden;
+    }
+    #scanframe-promo-preview .sf-browser-top,
+    #scanframe-promo-preview .sf-download {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: calc(var(--font-size-base) * .5);
+      padding: calc(var(--font-size-base) * .65) calc(var(--font-size-base) * .8);
+    }
+    #scanframe-promo-preview .sf-browser-top { border-bottom: 1px solid var(--border); }
+    #scanframe-promo-preview .sf-dots { display: flex; gap: 5px; }
+    #scanframe-promo-preview .sf-dots i {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+    #scanframe-promo-preview .sf-private { color: var(--green); }
+    #scanframe-promo-preview .sf-workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: calc(var(--font-size-base) * 1.1);
+      align-items: center;
+      padding: calc(var(--font-size-base) * 1.1);
+    }
+    #scanframe-promo-preview .sf-editor,
+    #scanframe-promo-preview .sf-preview {
+      display: grid;
+      justify-items: start;
+      gap: calc(var(--font-size-base) * .6);
+    }
+    #scanframe-promo-preview .sf-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--foreground);
+      overflow-wrap: anywhere;
+    }
+    #scanframe-promo-preview .sf-link b { color: var(--blue); }
+    #scanframe-promo-preview .sf-swatches { display: flex; gap: 7px; }
+    #scanframe-promo-preview .sf-swatches i {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--blue);
+    }
+    #scanframe-promo-preview .sf-swatches i:nth-child(2) { background: var(--orange); }
+    #scanframe-promo-preview .sf-swatches i:nth-child(3) { background: var(--green); }
+    #scanframe-promo-preview .sf-swatches i:nth-child(4) { background: var(--purple); }
+    #scanframe-promo-preview .sf-ready {
+      margin-top: calc(var(--font-size-base) * .5);
+      color: var(--green);
+      opacity: 0;
+    }
+    #scanframe-promo-preview .sf-frame {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: min(100%, 220px);
+      aspect-ratio: 1;
+      padding: 12px;
+      border: 3px solid var(--blue);
+      border-radius: 18px;
+      background: var(--card);
+      overflow: hidden;
+    }
+    #scanframe-promo-preview .sf-qr {
+      display: grid;
+      grid-template-columns: repeat(21, 1fr);
+      grid-template-rows: repeat(21, 1fr);
+      width: 100%;
+      aspect-ratio: 1;
+      gap: 1px;
+      background: var(--card);
+    }
+    #scanframe-promo-preview .sf-cell { background: transparent; }
+    #scanframe-promo-preview .sf-cell.is-dark { background: var(--foreground); }
+    #scanframe-promo-preview .sf-cell.is-finder { background: var(--foreground); }
+    #scanframe-promo-preview .sf-cell.is-finder.is-light { background: var(--card); }
+    #scanframe-promo-preview .sf-center-logo {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      width: 23%;
+      aspect-ratio: 1;
+      border: 4px solid var(--card);
+      border-radius: 10px;
+      background: var(--blue);
+      color: var(--primary-foreground);
+      font-weight: 500;
+    }
+    #scanframe-promo-preview .sf-scan-line {
+      position: absolute;
+      top: 10%;
+      left: 8%;
+      width: 84%;
+      height: 2px;
+      background: var(--blue);
+      opacity: 0;
+    }
+    #scanframe-promo-preview .sf-download {
+      justify-content: center;
+      border-top: 1px solid var(--border);
+      color: var(--muted-foreground);
+    }
+    #scanframe-promo-preview .sf-download-check { color: var(--green); }
+    #scanframe-promo-preview .sf-caption {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      color: var(--blue);
+      font-weight: 500;
+      opacity: 0;
+    }
+    #scanframe-promo-preview .sf-replay { justify-self: start; }
+    #scanframe-promo-preview.is-playing .sf-browser { animation: sf-enter .55s .15s both; }
+    #scanframe-promo-preview.is-playing .sf-link { animation: sf-enter .45s .55s both; }
+    #scanframe-promo-preview.is-playing .sf-cell { animation: sf-cell .35s calc(.9s + var(--cell-delay)) both; }
+    #scanframe-promo-preview.is-playing .sf-scan-line { animation: sf-scan 1s 2.2s ease-in-out both; }
+    #scanframe-promo-preview.is-playing .sf-ready { animation: sf-ready .35s 3.25s both; }
+    #scanframe-promo-preview.is-playing .sf-caption-one { animation: sf-caption .65s 1.35s both; }
+    #scanframe-promo-preview.is-playing .sf-caption-two { animation: sf-caption .65s 2.45s both; }
+    #scanframe-promo-preview.is-playing .sf-caption-three { animation: sf-caption .65s 3.55s both; }
+    @keyframes sf-enter {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes sf-cell {
+      from { opacity: 0; transform: scale(.35); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes sf-scan {
+      0% { top: 10%; opacity: 0; }
+      15% { opacity: 1; }
+      85% { opacity: 1; }
+      100% { top: 88%; opacity: 0; }
+    }
+    @keyframes sf-ready {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes sf-caption {
+      0% { opacity: 0; transform: translateY(5px); }
+      20%, 75% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-3px); }
+    }
+    @media (max-width: 480px) {
+      #scanframe-promo-preview .sf-workspace { grid-template-columns: 1fr; }
+      #scanframe-promo-preview .sf-preview { justify-items: center; }
+      #scanframe-promo-preview .sf-preview > .text-small { justify-self: center; }
+      #scanframe-promo-preview .sf-frame { width: min(68vw, 220px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #scanframe-promo-preview.is-playing * { animation: none !important; }
+      #scanframe-promo-preview .sf-ready { opacity: 1; }
+    }
+  </style>
+
+  <script>
+    (() => {
+      const root = document.getElementById("scanframe-promo-preview");
+      const grid = root?.querySelector("[data-qr-grid]");
+      const replay = root?.querySelector("[data-replay]");
+      if (!root || !grid || !replay) return;
+
+      const size = 21;
+      const isFinder = (row, column, top, left) => row >= top && row < top + 7 && column >= left && column < left + 7;
+      const fragment = document.createDocumentFragment();
+      for (let row = 0; row < size; row += 1) {
+        for (let column = 0; column < size; column += 1) {
+          const cell = document.createElement("span");
+          cell.className = "sf-cell";
+          cell.style.setProperty("--cell-delay", `${row * size + column}ms`);
+          const finder = [[0, 0], [0, 14], [14, 0]].find(([top, left]) => isFinder(row, column, top, left));
+          if (finder) {
+            const localRow = row - finder[0];
+            const localColumn = column - finder[1];
+            const dark = localRow === 0 || localRow === 6 || localColumn === 0 || localColumn === 6 || (localRow >= 2 && localRow <= 4 && localColumn >= 2 && localColumn <= 4);
+            cell.classList.add("is-finder");
+            if (!dark) cell.classList.add("is-light");
+          } else if ((row * 13 + column * 7 + row * column * 3) % 17 < 8) {
+            cell.classList.add("is-dark");
+          }
+          fragment.appendChild(cell);
+        }
+      }
+      grid.appendChild(fragment);
+
+      replay.addEventListener("click", () => {
+        root.classList.remove("is-playing");
+        void root.offsetWidth;
+        root.classList.add("is-playing");
+      });
+    })();
+  </script>
+</div>
